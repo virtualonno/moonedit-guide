@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>moonedit Operator Manual</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cmask id='m'%3E%3Crect width='32' height='32' fill='white'/%3E%3Ccircle cx='22' cy='11' r='11'/%3E%3C/mask%3E%3Ccircle cx='16' cy='16' r='13' fill='%23385788' mask='url(%23m)'/%3E%3C/svg%3E">
-<!-- moonedit 0.1.0-alpha.5 operator manual; guide.md beside it is the plain-text reference and says the same.
+<!-- moonedit 0.1.0-alpha.6 operator manual; guide.md beside it is the plain-text reference and says the same.
      Self-contained. The last <style> holds the RemiDarkNET fonts and clouds; embed_manual_assets.py refreshes it. -->
 <style>
 /* RemiDarkNET profile-client platform theme, as the Miladycraft survey pages use it: a sky Stage holding glass
@@ -23,8 +23,6 @@
   --title-shadow: 1px 2px 4px rgb(var(--navy) / 45%);
   --btn-secondary: linear-gradient(180deg, #f0f0f0 0%, var(--surface-2) 100%);
   --btn-secondary-hover: linear-gradient(180deg, var(--surface-3) 0%, var(--surface-1) 100%);
-  --btn-primary: linear-gradient(180deg, #3b49c7 0%, #273083 50%, #21296c 100%);
-  --btn-primary-hover: linear-gradient(180deg, #5c6ae5 0%, #353f9c 50%, #2b3484 100%);
   --pressed: inset 1px 2px 3px rgb(var(--navy) / 45%), inset -1px -1px 0 rgb(255 255 255 / 20%), 0 1px 0 rgb(255 255 255 / 55%);
   --font-sans: "Remilia-Kosugi", "Kosugi", system-ui, sans-serif;
   --font-serif: "Remilia-Mincho", "Times New Roman", serif;
@@ -97,13 +95,23 @@ select { appearance: none; padding-right: 28px;
 .btn:hover:not(:disabled) { background-image: var(--btn-secondary-hover); }
 .btn:active:not(:disabled) { translate: 0 1px; box-shadow: var(--pressed); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn.primary { color: #fff; background: var(--accent-strong) var(--btn-primary); border-color: rgb(0 100 180 / 40%); text-shadow: none; }
-.btn.primary:hover:not(:disabled) { background-image: var(--btn-primary-hover); }
 .btn.flag { font: 12.5px/1 var(--font-mono); text-transform: none; min-width: 0; }
 .btn.ic { min-width: 24px; padding: 0; font-family: var(--font-mono); }
-.copyrow { display: flex; gap: 8px; align-items: center; min-width: 0; }
-.copyrow input { flex: 1 1 auto; }
-.copyrow.big input { height: 40px; font-size: 15px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* A command copies when clicked: the box is the control, its hint shows on hover and focus. */
+.cmd { position: relative; display: block; min-width: 0; padding: 8px 64px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-3);
+  box-shadow: var(--field-inset); font: 13px/18px var(--font-mono); letter-spacing: 0; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; cursor: pointer;
+  transition: border-color .12s, background-color .12s; }
+.cmd .w { white-space: nowrap; } /* wrap between words, never inside a flag such as -without */
+.cmd.big { padding-block: 10px; font-size: 15px; line-height: 20px; }
+.cmd::after { content: "copy"; position: absolute; right: 8px; top: 50%; translate: 0 -50%; padding: 1px 6px; border-radius: 4px; font: 11px/16px var(--font-mono);
+  color: var(--ink-muted); opacity: 0; transition: opacity .12s; pointer-events: none; }
+.cmd:hover, .cmd:focus-visible { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, var(--surface-3)); }
+.cmd:hover::after, .cmd:focus-visible::after { opacity: 1; }
+.cmd[data-state="copied"] { border-color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--surface-3)); }
+.cmd[data-state="copied"]::after { content: "copied ✓"; opacity: 1; color: var(--success); }
+.cmd[data-state="select"]::after { content: "Ctrl+C"; opacity: 1; color: var(--warning); }
+@media (hover: none) { .cmd::after { opacity: .7; } }
 .notice { margin: 0; padding: 8px 12px 8px 28px; border: 1px solid var(--danger); border-radius: 6px; background: color-mix(in srgb, var(--danger) 6%, var(--surface-3)); font-size: 13px; line-height: 18px; }
 .notice b { font-weight: 500; }
 
@@ -218,9 +226,9 @@ svg.grid { display: block; width: 100%; height: auto; max-height: 340px; }
 <main class="column">
 
   <section class="window" aria-labelledby="t-top">
-    <div class="titlebar"><h1 id="t-top">moonedit · Operator manual</h1><span class="trail">0.1.0-alpha.5 · NeoForge 1.21.1</span></div>
+    <div class="titlebar"><h1 id="t-top">moonedit · Operator manual</h1><span class="trail">0.1.0-alpha.6 · NeoForge 1.21.1</span></div>
     <div class="body">
-      <p>Type sentences after <code>/mo</code>: the sentence says what and where, flags say how. Tab completes every word; <code>;</code> chains sentences. Edits run as background jobs, and every edit can be undone, even after a restart. Operators need level 2; the console types without the slash and gives coordinates instead of <code>target</code>. The same reference as plain text: <a href="guide.html">the operator guide</a>.</p>
+      <p>Type sentences after <code>/mo</code>: the sentence says what and where, flags say how. Tab completes every word; <code>;</code> chains sentences, each starting once the one before has finished. Edits run as background jobs in the order you send them, and every edit can be undone, even after a restart. Operators need level 2; the console types without the slash and gives coordinates instead of <code>target</code>. The same reference as plain text: <a href="guide.html">the operator guide</a>.</p>
     </div>
   </section>
 
@@ -271,7 +279,9 @@ svg.grid { display: block; width: 100%; height: auto; max-height: 340px; }
 </template>
 <template id="t-clipboard">
   <ul class="notes">
-    <li>Clipboard flags apply left to right; a block left out is not copied, pasted, moved or saved. <code>-onto</code>, <code>-with</code> and <code>-without</code> are settings.</li>
+    <li>Every clipboard sentence takes the same steps, applied left to right: <code>-where</code>, <code>-skip</code>, <code>-swap</code>, <code>-drained</code>, <code>-rotate</code>, <code>-flip</code>, <code>-shift</code>. A block left out is not copied, pasted, moved or saved; entities follow their blocks. <code>-onto</code>, <code>-with</code> and <code>-without</code> are settings.</li>
+    <li>A turn turns everything before it, shifts included; a shift goes the world’s way. Copy, cut and load keep their steps with the clipboard, save writes them into the file, paste, move and stack apply them to what they place.</li>
+    <li>The copy point is where you stood, or the place after <code>at</code>; messages and <code>info</code> show it from the bottom center of the clipboard’s box. Paste, move and stack select what they placed, so <code>paste #fang at #site ; move down 1</code> lowers the paste.</li>
     <li>Named clipboards are shared by all operators. Pastes keep the destination’s biomes unless <code>-with biomes</code>; moves carry them.</li>
     <li>Pasted waystones, computers and Mekanism multiblocks become new ones; a cut’s first paste keeps their identity.</li>
   </ul>
@@ -306,10 +316,10 @@ svg.grid { display: block; width: 100%; height: auto; max-height: 340px; }
 </template>
 <template id="t-flags"><div class="matrix" id="matrix"></div></template>
 
-<script id="ref-data" type="application/json">[{"g":"Select","s":"select sphere \u003cradius> [at \u003cplace>]","d":"A sphere 2r + 1 blocks across, centered on the anchor.","ex":["select sphere 12 at target"],"open":"select-target"},{"g":"Select","s":"select cylinder \u003cradius> [height]","d":"A cylinder rising from the anchor; 1 high when the height is left out.","ex":["select cylinder 8 20"]},{"g":"Select","s":"select ellipsoid \u003cx>x\u003cy>x\u003cz>","d":"An ellipsoid with these radii, centered on the anchor.","ex":["select ellipsoid 12x6x12"]},{"g":"Select","s":"select box \u003cw>x\u003ch>x\u003cd>","d":"A box centered horizontally and rising from the anchor; box 8 is a cube.","ex":["select box 10x4x10","select box 8 ahead 5"],"open":"select-box"},{"g":"Select","s":"select from \u003cplace> to \u003cplace>","d":"The box between two places.","ex":["select from #gate to target"],"open":"select-span"},{"g":"Select","s":"from [place]","d":"Sets the first corner of a box (default: where you stand).","ex":["from","from #gate"],"k":"corner"},{"g":"Select","s":"to [place]","d":"Sets the second corner; with both set, the box between them is selected.","ex":["to target","to 100 -20 64"],"k":"corner"},{"g":"Select","s":"select chunk · select chunks [n]","d":"The chunk around the anchor, or n chunks around it each way, full world height.","ex":["select chunk","select chunks 2"]},{"g":"Select","s":"select add \u003cshape> [at \u003cplace>]","d":"Adds a shape to the selection.","ex":["select add cylinder 6 10 at #tower"],"open":"select-add","k":"union combine"},{"g":"Select","s":"select cut \u003cshape> [at \u003cplace>]","d":"Removes a shape from the selection.","ex":["select cut sphere 4 at target"],"k":"subtract combine"},{"g":"Select","s":"select keep \u003cshape> [at \u003cplace>]","d":"Keeps only the part of the selection inside a shape.","ex":["select keep box 32x16x32"],"k":"intersect combine"},{"g":"Select","s":"select grow \u003cn> [directions]","d":"Grows a box selection, on every side unless directions are named.","ex":["select grow 3","select grow 3 up north"],"open":"grow","k":"expand"},{"g":"Select","s":"select shrink \u003cn> [directions]","d":"Shrinks a box selection.","ex":["select shrink 2 east west"],"k":"contract"},{"g":"Select","s":"select extend up|down to sky|bedrock|surface|\u003cy>","d":"Stretches a box selection up or down to a limit.","ex":["select extend up to sky","select extend down to 40"],"open":"extend"},{"g":"Select","s":"select shift \u003cdirection> [n]","d":"Moves the selection, not the blocks in it.","ex":["select shift north 10"]},{"g":"Select","s":"select trim","d":"Shrinks the selection to the box around the blocks in it that are not air.","ex":["select trim"]},{"g":"Select","s":"select save as #\u003cname> · select #\u003cname>","d":"Keeps a selection under a name, and recalls it.","ex":["select save as #plaza","select #plaza"]},{"g":"Select","s":"select clear","d":"Drops the selection.","ex":["select clear"]},{"g":"Select","s":"info","d":"Describes the selection.","ex":["info"]},{"g":"Select","s":"mark #\u003cname> [at \u003cplace>]","d":"Names a place, the block you look at unless another is given.","ex":["mark #gate","mark #gate at here"]},{"g":"Places and directions","s":"here","d":"Where you stand; the console stands at world spawn.","ex":["paste at here"]},{"g":"Places and directions","s":"target","d":"The block you look at, up to 256 blocks away. The console has no view.","ex":["mark #spire at target"]},{"g":"Places and directions","s":"ahead \u003cn>","d":"n blocks the way you face.","ex":["select sphere 6 ahead 10"]},{"g":"Places and directions","s":"#\u003cmark>","d":"A place named with mark.","ex":["paste at #site"]},{"g":"Places and directions","s":"\u003cx> \u003cy> \u003cz>","d":"Coordinates; ~ is relative to where you stand.","ex":["select sphere 8 at 100 64 -20","paste at ~ ~-3 ~"],"k":"coordinates relative tilde"},{"g":"Places and directions","s":"select \u003cshape> target|here|ahead \u003cn>|#\u003cmark>","d":"In select, at can be dropped before these.","ex":["select sphere 12 target"]},{"g":"Places and directions","s":"up · down · north · south · east · west","d":"Fixed directions.","ex":["move up 12"]},{"g":"Places and directions","s":"ahead · back · left · right","d":"Directions relative to where you face.","ex":["stack 4 left"]},{"g":"Blocks","s":"\u003cblock>[\u003cproperty>=\u003cvalue>,…]","d":"A block as in vanilla commands, with a namespace for modded ones.","ex":["fill oak_stairs[facing=north,half=top]","fill create:andesite_casing"]},{"g":"Blocks","s":"#\u003cnamespace>:\u003ctag>","d":"Any block of a tag.","ex":["count #minecraft:logs"]},{"g":"Blocks","s":"\u003cblock> \u003cn>%, \u003cblock> \u003cn>%, …","d":"A material: a mix by percentage; entries without one share what is left. The same edit on the same place picks the same blocks.","ex":["fill stone 70%, andesite 30%","fill stone 50%, andesite, cobblestone"],"k":"mix material percent random"},{"g":"Filters","s":"\u003cblock> · #\u003ctag> · \u003cblock>[\u003cproperty>=\u003cvalue>]","d":"Those blocks, in any state unless properties are given.","ex":["count oak_stairs[half=top]"]},{"g":"Filters","s":"air","d":"Air.","ex":["paste -skip air"]},{"g":"Filters","s":"solid","d":"Blocks that stop movement.","ex":["fill stone -where not solid"]},{"g":"Filters","s":"liquid","d":"Anything holding a fluid, waterlogged blocks included.","ex":["clear -where liquid"]},{"g":"Filters","s":"natural","d":"Terrain: stone, soils, sand, gravel, ores, snow, ice, terracotta, water, lava, clay, mud.","ex":["smooth 3 -where natural"]},{"g":"Filters","s":"exposed","d":"Touching a see-through block on any face. World only.","ex":["fill moss_block -where exposed"]},{"g":"Filters","s":"surface","d":"Blocks that are not air, with air above. World only.","ex":["swap dirt to grass_block -where surface"]},{"g":"Filters","s":"above \u003cy> · below \u003cy>","d":"By height. World only.","ex":["clear -where water -skip below 40"],"k":"height"},{"g":"Filters","s":"near \u003cblock> \u003cn>","d":"Within n blocks of a block, up to 8. World only.","ex":["swap sand to grass_block -skip near water 3"]},{"g":"Filters","s":"steep [n]","d":"On a slope: beside the block the ground falls at least n blocks within one step (2 unless told, up to 8). World only.","ex":["swap grass_block to stone -where steep 3","overlay snow -where above 150 -skip steep"],"open":"steep","k":"slope cliff"},{"g":"Filters","s":"not · and · or · ( … ) · ,","d":"Combinations; and binds tighter than or; a comma is or (except in count).","ex":["count (stone or andesite) and above 40","clear -skip water, kelp"],"k":"combine list comma"},{"g":"Edit","s":"fill \u003cmaterial>","d":"Sets every selected block.","ex":["fill stone 70%, andesite 30% -where exposed"],"open":"fill-mix","k":"set"},{"g":"Edit","s":"clear","d":"Sets air.","ex":["clear -where water -skip below 40"],"open":"clear-water","k":"remove delete air"},{"g":"Edit","s":"drain","d":"Turns water and water plants into air and dries waterlogged blocks; lava stays.","ex":["drain"],"k":"water dry"},{"g":"Edit","s":"swap \u003cblock> to \u003cmaterial>, …","d":"Replaces blocks; a target without properties keeps the ones it shares.","ex":["swap dirt to grass_block, stone to deepslate","swap oak_stairs to spruce_stairs"],"open":"swap-keep","k":"replace"},{"g":"Edit","s":"walls \u003cmaterial>","d":"The selection’s sides, not its top or bottom.","ex":["walls stone_bricks"]},{"g":"Edit","s":"outline \u003cmaterial>","d":"The selection’s whole shell.","ex":["outline glass"]},{"g":"Edit","s":"hollow [thickness]","d":"Empties the inside, keeping a shell (1 thick by default).","ex":["hollow 2"]},{"g":"Edit","s":"overlay \u003cmaterial> [-depth \u003cn>]","d":"Fills the air above the surface, up to 8 blocks deep.","ex":["overlay snow_block -depth 2"],"open":"overlay"},{"g":"Edit","s":"biome \u003cbiome>","d":"Sets biome cells (4 × 4 × 4 blocks; a cell changes when its center is selected). No flags.","ex":["biome cherry_grove"]},{"g":"Edit","s":"regen","d":"Regenerates the selection with the world’s generator, biomes included. No flags.","ex":["regen"],"k":"regenerate seed"},{"g":"Inspect","s":"count \u003cfilter>","d":"Counts matching blocks; one filter, joined with or rather than commas.","ex":["count diamond_ore or deepslate_diamond_ore"],"open":"count","k":"inspect"},{"g":"Inspect","s":"distribution","d":"Lists the selected blocks by kind, most common first; -where and -skip narrow it.","ex":["distribution -skip air"],"k":"inspect"},{"g":"Terrain","s":"smooth [passes]","d":"Blurs the ground; more passes smooth more (1 unless told, up to 64).","ex":["smooth 3","smooth -where sand"],"open":"smooth"},{"g":"Terrain","s":"raise [blocks] · lower [blocks]","d":"Lifts or sinks the ground (1 block unless told, up to 256).","ex":["raise 6 -soft 12","lower 2"],"open":"raise-soft"},{"g":"Terrain","s":"flatten [to \u003cy>]","d":"Levels the ground to a height; without one, to where a brush stroke lands, or the selection’s average.","ex":["flatten to 80 -where above 80","flatten to 64 -where below 64"],"open":"flatten-peaks"},{"g":"Terrain","s":"terrace [step]","d":"Cuts slopes into flat benches every step blocks (4 unless told, 2 to 64).","ex":["terrace 5"]},{"g":"Terrain","s":"roughen [blocks]","d":"Adds natural bumps and hollows up to that many blocks high or deep (2 unless told, up to 32).","ex":["roughen 3"]},{"g":"Terrain","s":"erode [strength]","d":"Rain wears gullies into slopes and leaves what it carries below; stronger rains longer (1 unless told, up to 16).","ex":["erode 2"],"k":"rain gully"},{"g":"Terrain","s":"weather [passes]","d":"Crumbles cliffs and spikes into slopes no steeper than one block per block (1 unless told, up to 16).","ex":["weather"]},{"g":"Sculpt","s":"sharpen [strength]","d":"The opposite of smooth: creases deepen and crests stand out (1 unless told, up to 8).","ex":["sharpen 2"],"open":"sharpen","k":"crease crest"},{"g":"Sculpt","s":"stretch \u003cfactor>","d":"Scales the relief about the average height, by -4 to 4 but not 0: 2 doubles it, 0.5 halves it, -1 turns hills into hollows.","ex":["stretch 2","stretch 0.5","stretch -1"],"open":"stretch","k":"scale exaggerate invert"},{"g":"Sculpt","s":"reshape peaks|domes|mesas","d":"Bends the relief between the lowest and highest ground: wide valleys under sharp peaks, broad rounded hills, or flat tops and floors joined by steep sides.","ex":["reshape peaks","reshape mesas"],"k":"curve plateau"},{"g":"Sculpt","s":"ridge [strength]","d":"Raises sharp crests along the lines that climb toward each summit, never above it (1 unless told, up to 16).","ex":["ridge 3"],"k":"crest spur"},{"g":"Sculpt","s":"stream [depth]","d":"Cuts a channel downhill from where a brush stroke lands (the highest ground for a selection) and fills it with water (2 deep unless told, up to 16). It stops at standing water and its bed never climbs; drain leaves a dry gully.","ex":["stream 3","brush cylinder 40 stream 3"],"open":"stream","k":"river water channel"},{"g":"Sculpt","s":"mountain [height]","d":"Raises a craggy mountain over the middle of the selection or brush, its summit exactly that high (16 unless told, up to 256). Every stroke grows a different peak.","ex":["mountain 40","brush sphere 24 mountain 40"],"open":"mountain","k":"peak summit"},{"g":"Clipboard","s":"copy [as #\u003cname>]","d":"Copies the selection, trimmed to its content; the copy point is where you stand.","ex":["copy","copy as #town -without entities"],"open":"copy"},{"g":"Clipboard","s":"cut [as #\u003cname>]","d":"Copies, then clears what it copied and removes its entities.","ex":["cut as #bridge"]},{"g":"Clipboard","s":"paste [#\u003cname>] [at \u003cplace>]","d":"Places a copy so its copy point lands at the place, air included, then selects what it placed.","ex":["paste","paste #fang at #site -rotate 90 -skip air"],"open":"paste-fang"},{"g":"Clipboard","s":"move \u003cdirection> [distance]","d":"Moves the selection’s blocks, entities and biomes; the selection follows. Multiples of 16 are especially fast.","ex":["move east 32 -skip air"],"open":"move"},{"g":"Clipboard","s":"move to \u003cplace>","d":"Moves the selection so its lowest north-west corner lands at the place.","ex":["move to #site"]},{"g":"Clipboard","s":"stack \u003ccount> [direction]","d":"Repeats the selection side by side, up to 256 times.","ex":["stack 6 up -skip air"],"open":"stack","k":"repeat array"},{"g":"Archives","s":"save [#\u003cclipboard>] as \u003cname>","d":"Writes a clipboard to \u003cname>.moon in the archive folder; a taken name asks first.","ex":["save as town","save #fang as fang-dry -drained"],"open":"save-dry","k":"file export"},{"g":"Archives","s":"save … as \u003cname>.schem","d":"Exports a Sponge schematic for WorldEdit, FAWE and other editors.","ex":["save as town.schem -next"],"open":"save-schem","k":"worldedit schematic export"},{"g":"Archives","s":"load \u003cname> [as #\u003cclipboard>]","d":"Reads an archive, or a .schem dropped into the folder, into a clipboard.","ex":["load town","load fang-manor as #fang -drained"],"open":"load","k":"file import schematic"},{"g":"Archives","s":"archives","d":"Lists the archives.","ex":["archives"]},{"g":"Brushes","s":"brush \u003cshape> \u003cedit>","d":"Binds an edit to the item in your hand: a sphere, cylinder, ellipsoid or box, sized as in select, with any edit but biome, regen, count and distribution, and its flags.","ex":["brush sphere 6 fill stone 70%, andesite 30% -where exposed","brush sphere 5 clear -where water","brush box 5x3x5 drain"],"open":"brush-fill"},{"g":"Brushes","s":"brush \u003cshape> \u003cterrain edit>","d":"Works on the ground under the shape, up to 16 blocks (or twice the radius, if more) above or below the block you hit, fading from center to rim; -soft n fades over the outer n blocks instead. A stream runs at full depth until it leaves the brush.","ex":["brush sphere 8 raise 3","brush cylinder 10 flatten -soft 3","brush sphere 12 smooth 2","brush sphere 20 ridge 3","brush sphere 12 stretch -1"],"open":"brush-raise","k":"terrain fade"},{"g":"Brushes","s":"brush · brush clear","d":"Shows the brush on the item in your hand, or removes it.","ex":["brush","brush clear"]},{"g":"Brushes","s":"wand","d":"Turns the item in hand into a selection wand: left-click sets the first corner, right-click the second.","ex":["wand"],"open":"wand"},{"g":"Brushes","s":"stroke at \u003cplace>","d":"Applies your brush there: how the console paints, since it has no hand.","ex":["stroke at 100 64 -20"],"k":"console"},{"g":"History","s":"undo [n] · redo [n]","d":"Steps through your edits; undo keeps blocks players changed since.","ex":["undo","undo 3","redo"],"open":"undo"},{"g":"History","s":"history","d":"Lists your edits with their age and the disk space history uses.","ex":["history"]},{"g":"History","s":"jobs · cancel [job]","d":"Lists running jobs; stops one, your newest by default.","ex":["jobs","cancel 2"]},{"g":"History","s":"\u003csentence> ; \u003csentence>","d":"Several sentences on one line.","ex":["select sphere 12 at target ; fill stone ; undo"],"k":"chain semicolon"},{"g":"Flags","s":"-where \u003cfilter>","d":"Only blocks that match take part. On clipboard sentences, a pipeline step.","ex":["fill glass -where air"]},{"g":"Flags","s":"-skip \u003cfilter>","d":"Blocks that match are left out. On clipboard sentences, a pipeline step.","ex":["paste -skip air"]},{"g":"Flags","s":"-onto \u003cfilter>","d":"Only destination blocks that match may be overwritten. paste and stack.","ex":["paste #fang -onto air"],"open":"paste-onto"},{"g":"Flags","s":"-swap \u003cblock> to \u003cmaterial>, …","d":"The clipboard’s blocks change on the way through. Clipboard sentences.","ex":["paste -skip stone -swap oak_planks to stone"],"open":"paste-guide"},{"g":"Flags","s":"-drained","d":"Water and water plants become air, waterlogged blocks dry. Clipboard sentences.","ex":["load fang-manor as #fang -drained"],"open":"load"},{"g":"Flags","s":"-rotate \u003cdegrees>","d":"Turns the clipboard clockwise seen from above, by a multiple of 90. paste.","ex":["paste -rotate 90","paste -rotate -90"]},{"g":"Flags","s":"-flip x|y|z","d":"Mirrors the clipboard across its copy point; y is upside down. paste.","ex":["paste -flip x"],"k":"mirror"},{"g":"Flags","s":"-with biomes","d":"Places the copied biomes too. paste and stack.","ex":["paste #town -with biomes"]},{"g":"Flags","s":"-without entities","d":"Entities stay behind. Clipboard sentences.","ex":["move up 8 -without entities"]},{"g":"Flags","s":"-whole","d":"Keeps the whole selection instead of trimming to the content. copy and cut.","ex":["copy -whole"],"k":"trim"},{"g":"Flags","s":"-depth \u003cn>","d":"How many blocks of air above the surface an overlay fills, up to 8. overlay.","ex":["overlay snow_block -depth 2"]},{"g":"Flags","s":"-soft \u003cn>","d":"Fades the edit out over the outer n blocks; -soft 0 keeps a hard edge. Terrain edits.","ex":["raise 6 -soft 12","brush cylinder 10 flatten -soft 3"],"k":"fade blend","open":"brush-flatten"},{"g":"Flags","s":"-replace · -next","d":"Overwrite a taken archive name, or take the next free one. save.","ex":["save as town -replace","save as town -next"]},{"g":"Client part","s":"Z","d":"Opens the panel (rebindable under Controls, moonedit). The client part is optional: everything works from chat without it.","ex":[],"k":"key panel client mod"},{"g":"Client part","s":"Sentence box","d":"Reads what you type with the server’s grammar, says where it stops reading, and offers what may come next as chips. Tab takes the first chip, Enter runs the sentence, up and down bring back earlier ones.","ex":[],"k":"panel completion chips"},{"g":"Client part","s":"Palette","d":"Starts common sentences, grouped as Select, Edit, Terrain, Sculpt and Clipboard; hovering an icon shows the sentence it starts. On the right are the selection, clipboards, history, jobs and archives with buttons for what applies to them.","ex":[],"k":"panel icons"},{"g":"Client part","s":"Selection · Brush · Paste · Status","d":"Switch the outlines of the selection, wand corners and marks; the brush where a stroke would land; where a paste would go (off at first); and the corner panel showing the selection, clipboard and running jobs.","ex":[],"k":"outline preview overlay status corner toggle"}]</script>
+<script id="ref-data" type="application/json">[{"g":"Select","s":"select sphere \u003cradius> [at \u003cplace>]","d":"A sphere 2r + 1 blocks across, centered on the anchor.","ex":["select sphere 12 at target"],"open":"select-target"},{"g":"Select","s":"select cylinder \u003cradius> [height]","d":"A cylinder rising from the anchor; 1 high when the height is left out.","ex":["select cylinder 8 20"]},{"g":"Select","s":"select ellipsoid \u003cx>x\u003cy>x\u003cz>","d":"An ellipsoid with these radii, centered on the anchor.","ex":["select ellipsoid 12x6x12"]},{"g":"Select","s":"select box \u003cw>x\u003ch>x\u003cd>","d":"A box centered horizontally and rising from the anchor; box 8 is a cube.","ex":["select box 10x4x10","select box 8 at ahead 5"],"open":"select-box"},{"g":"Select","s":"select from \u003cplace> to \u003cplace>","d":"The box between two places; it takes no anchor.","ex":["select from #gate to target"],"open":"select-span"},{"g":"Select","s":"from [place]","d":"Sets the first corner of a box (default: where you stand).","ex":["from","from #gate","from target down 3"],"k":"corner"},{"g":"Select","s":"to [place]","d":"Sets the second corner; with both set, the box between them is selected.","ex":["to target","to 100 -20 64"],"k":"corner"},{"g":"Select","s":"select chunk · select chunks [n]","d":"The chunk around the anchor, or n chunks around it each way, full world height.","ex":["select chunk","select chunks 2"]},{"g":"Select","s":"select add \u003cshape> [at \u003cplace>]","d":"Adds a shape to the selection.","ex":["select add cylinder 6 10 at #tower"],"open":"select-add","k":"union combine"},{"g":"Select","s":"select cut \u003cshape> [at \u003cplace>]","d":"Removes a shape from the selection.","ex":["select cut sphere 4 at target"],"k":"subtract combine"},{"g":"Select","s":"select keep \u003cshape> [at \u003cplace>]","d":"Keeps only the part of the selection inside a shape.","ex":["select keep box 32x16x32"],"k":"intersect combine"},{"g":"Select","s":"select grow \u003cn> [directions]","d":"Grows a box selection, on every side unless directions are named.","ex":["select grow 3","select grow 3 up north"],"open":"grow","k":"expand"},{"g":"Select","s":"select shrink \u003cn> [directions]","d":"Shrinks a box selection.","ex":["select shrink 2 east west"],"k":"contract"},{"g":"Select","s":"select extend up|down to sky|bedrock|surface|\u003cy>","d":"Stretches a box selection up or down to a limit.","ex":["select extend up to sky","select extend down to 40"],"open":"extend"},{"g":"Select","s":"select shift \u003cdirection> [n]","d":"Moves the selection, not the blocks in it.","ex":["select shift north 10"]},{"g":"Select","s":"select trim","d":"Shrinks the selection to the box around the blocks in it that are not air.","ex":["select trim"]},{"g":"Select","s":"select save as #\u003cname> · select #\u003cname>","d":"Keeps a selection under a name, and recalls it.","ex":["select save as #plaza","select #plaza"]},{"g":"Select","s":"select clear","d":"Drops the selection.","ex":["select clear"]},{"g":"Select","s":"info [#\u003cclipboard>]","d":"Describes the selection and your clipboard, or the named clipboard: its size and where its copy point is.","ex":["info","info #fang"],"k":"describe clipboard copy point"},{"g":"Select","s":"mark #\u003cname> [at \u003cplace>]","d":"Names a place, the block you look at unless another is given.","ex":["mark #gate","mark #gate at here","mark #door at #gate up 2 north 3"]},{"g":"Places and directions","s":"here","d":"Where you stand; the console stands at world spawn. A place left out is here, except for mark.","ex":["paste at here down 1"]},{"g":"Places and directions","s":"target","d":"The block you look at, up to 256 blocks away. The console has no view.","ex":["mark #spire at target"]},{"g":"Places and directions","s":"\u003cplace> \u003cdirection> [n] …","d":"Nudges: any place followed by directions and a number of blocks (1 unless told). Nudges alone start from where you stand, so ahead 5 is five blocks the way you face.","ex":["paste #fang at #site down 1","paste at target up","select sphere 6 at ahead 10","mark #door at #gate up 2 north 3"],"k":"nudge offset ahead"},{"g":"Places and directions","s":"#\u003cmark>","d":"A place named with mark.","ex":["paste at #site"]},{"g":"Places and directions","s":"\u003cx> \u003cy> \u003cz>","d":"Coordinates; ~ is relative to where you stand.","ex":["select sphere 8 at 100 64 -20","paste at ~ ~-3 ~"],"k":"coordinates relative tilde"},{"g":"Places and directions","s":"at \u003cplace>","d":"Optional places come after at: select, mark, paste and copy. from, to, select from … to … and move to take their place as it is.","ex":["select sphere 12 at target","copy as #gate at #corner"],"k":"anchor"},{"g":"Places and directions","s":"up · down · north · south · east · west","d":"Fixed directions: the world’s, wherever they appear.","ex":["move up 12"]},{"g":"Places and directions","s":"ahead · back · left · right","d":"Directions relative to where you face.","ex":["stack 4 left"]},{"g":"Blocks","s":"\u003cblock>[\u003cproperty>=\u003cvalue>,…]","d":"A block as in vanilla commands, with a namespace for modded ones.","ex":["fill oak_stairs[facing=north,half=top]","fill create:andesite_casing"]},{"g":"Blocks","s":"#\u003cnamespace>:\u003ctag>","d":"Any block of a tag.","ex":["count -where #minecraft:logs"]},{"g":"Blocks","s":"\u003cblock> \u003cn>%, \u003cblock> \u003cn>%, …","d":"A material: a mix by percentage; entries without one share what is left. The same edit on the same place picks the same blocks.","ex":["fill stone 70%, andesite 30%","fill stone 50%, andesite, cobblestone"],"k":"mix material percent random"},{"g":"Filters","s":"\u003cblock> · #\u003ctag> · \u003cblock>[\u003cproperty>=\u003cvalue>]","d":"Those blocks, in any state unless properties are given.","ex":["count -where oak_stairs[half=top]"]},{"g":"Filters","s":"air","d":"Air.","ex":["paste -skip air"]},{"g":"Filters","s":"solid","d":"Blocks that stop movement.","ex":["fill stone -where not solid"]},{"g":"Filters","s":"liquid","d":"Anything holding a fluid, waterlogged blocks included.","ex":["clear -where liquid"]},{"g":"Filters","s":"natural","d":"Terrain: stone, soils, sand, gravel, ores, snow, ice, terracotta, water, lava, clay, mud.","ex":["smooth 3 -where natural"]},{"g":"Filters","s":"exposed","d":"Touching a see-through block on any face. World only.","ex":["fill moss_block -where exposed"]},{"g":"Filters","s":"surface","d":"Blocks that are not air, with air above. World only.","ex":["swap dirt to grass_block -where surface"]},{"g":"Filters","s":"above \u003cy> · below \u003cy>","d":"By height. World only.","ex":["clear -where water -skip below 40"],"k":"height"},{"g":"Filters","s":"near \u003cblock> \u003cn>","d":"Within n blocks of a block, up to 8. World only.","ex":["swap sand to grass_block -skip near water 3"]},{"g":"Filters","s":"steep [n]","d":"On a slope: beside the block the ground falls at least n blocks within one step (2 unless told, up to 8). World only.","ex":["swap grass_block to stone -where steep 3","overlay snow -where above 150 -skip steep"],"open":"steep","k":"slope cliff"},{"g":"Filters","s":"not · and · or · ( … ) · ,","d":"Combinations; and binds tighter than or; in flags a comma is or.","ex":["count -where (stone or andesite) and above 40","clear -skip water, kelp"],"k":"combine list comma"},{"g":"Edit","s":"fill \u003cmaterial>","d":"Sets every selected block.","ex":["fill stone 70%, andesite 30% -where exposed"],"open":"fill-mix","k":"set"},{"g":"Edit","s":"clear","d":"Sets air.","ex":["clear -where water -skip below 40"],"open":"clear-water","k":"remove delete air"},{"g":"Edit","s":"drain","d":"Turns water and water plants into air and dries waterlogged blocks; lava stays.","ex":["drain"],"k":"water dry"},{"g":"Edit","s":"swap \u003cblock> to \u003cmaterial>, …","d":"Replaces blocks; a target without properties keeps the ones it shares.","ex":["swap dirt to grass_block, stone to deepslate","swap oak_stairs to spruce_stairs"],"open":"swap-keep","k":"replace"},{"g":"Edit","s":"walls \u003cmaterial>","d":"The selection’s sides, not its top or bottom.","ex":["walls stone_bricks"]},{"g":"Edit","s":"outline \u003cmaterial>","d":"The selection’s whole shell.","ex":["outline glass"]},{"g":"Edit","s":"hollow [thickness]","d":"Empties the inside, keeping a shell (1 thick by default).","ex":["hollow 2"]},{"g":"Edit","s":"overlay \u003cmaterial> [-depth \u003cn>]","d":"Fills the air above the surface, up to 8 blocks deep.","ex":["overlay snow_block -depth 2"],"open":"overlay"},{"g":"Edit","s":"biome \u003cbiome>","d":"Sets biome cells (4 × 4 × 4 blocks; a cell changes when its center is selected). No flags.","ex":["biome cherry_grove"]},{"g":"Edit","s":"regen","d":"Regenerates the selection with the world’s generator, biomes included. No flags.","ex":["regen"],"k":"regenerate seed"},{"g":"Inspect","s":"count [-where \u003cfilter>] [-skip \u003cfilter>]","d":"Counts the selected blocks that match, or all that are not air.","ex":["count","count -where diamond_ore, deepslate_diamond_ore","count -where stone, dirt -skip exposed"],"open":"count","k":"inspect"},{"g":"Inspect","s":"distribution","d":"Lists the selected blocks by kind, most common first; -where and -skip narrow it.","ex":["distribution -skip air"],"k":"inspect"},{"g":"Terrain","s":"smooth [passes]","d":"Blurs the ground; more passes smooth more (1 unless told, up to 64).","ex":["smooth 3","smooth -where sand"],"open":"smooth"},{"g":"Terrain","s":"raise [blocks] · lower [blocks]","d":"Lifts or sinks the ground (1 block unless told, up to 256).","ex":["raise 6 -soft 12","lower 2"],"open":"raise-soft"},{"g":"Terrain","s":"flatten [to \u003cy>]","d":"Levels the ground to a height; without one, to where a brush stroke lands, or the selection’s average.","ex":["flatten to 80 -where above 80","flatten to 64 -where below 64"],"open":"flatten-peaks"},{"g":"Terrain","s":"terrace [step]","d":"Cuts slopes into flat benches every step blocks (4 unless told, 2 to 64).","ex":["terrace 5"]},{"g":"Terrain","s":"roughen [blocks]","d":"Adds natural bumps and hollows up to that many blocks high or deep (2 unless told, up to 32).","ex":["roughen 3"]},{"g":"Terrain","s":"erode [strength]","d":"Rain wears gullies into slopes and leaves what it carries below; stronger rains longer (1 unless told, up to 16).","ex":["erode 2"],"k":"rain gully"},{"g":"Terrain","s":"weather [passes]","d":"Crumbles cliffs and spikes into slopes no steeper than one block per block (1 unless told, up to 16).","ex":["weather"]},{"g":"Sculpt","s":"sharpen [strength]","d":"The opposite of smooth: creases deepen and crests stand out (1 unless told, up to 8).","ex":["sharpen 2"],"open":"sharpen","k":"crease crest"},{"g":"Sculpt","s":"stretch \u003cfactor>","d":"Scales the relief about the average height, by -4 to 4 but not 0: 2 doubles it, 0.5 halves it, -1 turns hills into hollows.","ex":["stretch 2","stretch 0.5","stretch -1"],"open":"stretch","k":"scale exaggerate invert"},{"g":"Sculpt","s":"reshape peaks|domes|mesas","d":"Bends the relief between the lowest and highest ground: wide valleys under sharp peaks, broad rounded hills, or flat tops and floors joined by steep sides.","ex":["reshape peaks","reshape mesas"],"k":"curve plateau"},{"g":"Sculpt","s":"ridge [strength]","d":"Raises sharp crests along the lines that climb toward each summit, never above it (1 unless told, up to 16).","ex":["ridge 3"],"k":"crest spur"},{"g":"Sculpt","s":"stream [depth]","d":"Cuts a channel downhill from where a brush stroke lands (the highest ground for a selection) and fills it with water (2 deep unless told, up to 16). It stops at standing water and its bed never climbs; drain leaves a dry gully.","ex":["stream 3","brush cylinder 40 stream 3"],"open":"stream","k":"river water channel"},{"g":"Sculpt","s":"mountain [height]","d":"Raises a craggy mountain over the middle of the selection or brush, its summit exactly that high (16 unless told, up to 256). Every stroke grows a different peak.","ex":["mountain 40","brush sphere 24 mountain 40"],"open":"mountain","k":"peak summit"},{"g":"Clipboard","s":"copy [as #\u003cname>] [at \u003cplace>]","d":"Copies the selection, trimmed to its content; the copy point, where pastes land, is the place or where you stand.","ex":["copy","copy as #town -without entities","copy as #gate at #corner"],"open":"copy"},{"g":"Clipboard","s":"cut [as #\u003cname>] [at \u003cplace>]","d":"Copies, then clears what it copied and removes its entities.","ex":["cut as #bridge","cut as #bridge at target"]},{"g":"Clipboard","s":"paste [#\u003cname>] [at \u003cplace>]","d":"Places a copy so its copy point lands at the place, air included, then selects what it placed.","ex":["paste","paste #fang at #site -rotate 90 -skip air","paste #fang at #site down 1"],"open":"paste-fang"},{"g":"Clipboard","s":"move \u003cdirection> [distance]","d":"Moves the selection’s blocks, entities and biomes and selects them where they land. Multiples of 16 are especially fast.","ex":["move east 32 -skip air"],"open":"move"},{"g":"Clipboard","s":"move to \u003cplace>","d":"Moves the selection so its lowest north-west corner lands at the place.","ex":["move to #site"]},{"g":"Clipboard","s":"move from \u003cplace> to \u003cplace>","d":"Moves the selection by the step from one place to the other; turns pivot on the from place.","ex":["move from #old to #new","move from here to target up"],"open":"move-from"},{"g":"Clipboard","s":"stack \u003ccount> [direction]","d":"Repeats the selection side by side, up to 256 times, and selects the source with its copies. Turned copies line up edge to edge.","ex":["stack 6 up -skip air"],"open":"stack","k":"repeat array"},{"g":"Archives","s":"save [#\u003cclipboard>] as \u003cname>","d":"Writes a clipboard to \u003cname>.moon in the archive folder; a taken name asks first.","ex":["save as town","save #fang as fang-dry -drained"],"open":"save-dry","k":"file export"},{"g":"Archives","s":"save … as \u003cname>.schem","d":"Exports a Sponge schematic for WorldEdit, FAWE and other editors.","ex":["save as town.schem -next"],"open":"save-schem","k":"worldedit schematic export"},{"g":"Archives","s":"load \u003cname> [as #\u003cclipboard>]","d":"Reads an archive, or a .schem dropped into the folder, into a clipboard.","ex":["load town","load fang-manor as #fang -drained"],"open":"load","k":"file import schematic"},{"g":"Archives","s":"archives","d":"Lists the archives.","ex":["archives"]},{"g":"Brushes","s":"brush \u003cshape> \u003cedit>","d":"Binds an edit to the item in your hand: a sphere, cylinder, ellipsoid or box, sized as in select, with any edit but biome, regen, count and distribution, and its flags.","ex":["brush sphere 6 fill stone 70%, andesite 30% -where exposed","brush sphere 5 clear -where water","brush box 5x3x5 drain"],"open":"brush-fill"},{"g":"Brushes","s":"brush \u003cshape> \u003cterrain edit>","d":"Works on the ground under the shape, up to 16 blocks (or twice the radius, if more) above or below the block you hit, fading from center to rim; -soft n fades over the outer n blocks instead. A stream runs at full depth until it leaves the brush.","ex":["brush sphere 8 raise 3","brush cylinder 10 flatten -soft 3","brush sphere 12 smooth 2","brush sphere 20 ridge 3","brush sphere 12 stretch -1"],"open":"brush-raise","k":"terrain fade"},{"g":"Brushes","s":"brush · brush clear","d":"Shows the brush on the item in your hand, or removes it.","ex":["brush","brush clear"]},{"g":"Brushes","s":"wand","d":"Turns the item in hand into a selection wand: left-click sets the first corner, right-click the second.","ex":["wand"],"open":"wand"},{"g":"Brushes","s":"stroke at \u003cplace>","d":"Applies your brush there: how the console paints, since it has no hand.","ex":["stroke at 100 64 -20"],"k":"console"},{"g":"History","s":"undo [n] · redo [n]","d":"Steps through your edits; undo keeps blocks players changed since.","ex":["undo","undo 3","redo"],"open":"undo"},{"g":"History","s":"history","d":"Lists your edits with their age and the disk space history uses.","ex":["history"]},{"g":"History","s":"jobs · cancel [job]","d":"Lists running jobs; stops one, your newest by default, and drops the sentences still waiting behind it. Both answer at once.","ex":["jobs","cancel 2"]},{"g":"History","s":"\u003csentence> ; \u003csentence>","d":"Several sentences on one line; each starts once the one before has finished, and a failed one stops the line.","ex":["select sphere 12 at target ; fill stone ; undo","paste #fang at #site ; move down 1"],"k":"chain semicolon"},{"g":"Flags","s":"-where \u003cfilter>","d":"Only blocks that match take part. On clipboard sentences, a pipeline step; entities follow their blocks.","ex":["fill glass -where air"]},{"g":"Flags","s":"-skip \u003cfilter>","d":"Blocks that match are left out. On clipboard sentences, a pipeline step.","ex":["paste -skip air"]},{"g":"Flags","s":"-onto \u003cfilter>","d":"Only destination blocks that match may be overwritten. paste and stack.","ex":["paste #fang -onto air"],"open":"paste-onto"},{"g":"Flags","s":"-swap \u003cblock> to \u003cmaterial>, …","d":"The clipboard’s blocks change on the way through. Clipboard sentences.","ex":["paste -skip stone -swap oak_planks to stone"],"open":"paste-guide"},{"g":"Flags","s":"-drained","d":"Water and water plants become air, waterlogged blocks dry. Clipboard sentences.","ex":["load fang-manor as #fang -drained"],"open":"load"},{"g":"Flags","s":"-rotate \u003cdegrees>","d":"Turns the clipboard clockwise seen from above, about its copy point, by a multiple of 90. Clipboard sentences.","ex":["paste -rotate 90","paste -rotate -90","load town -rotate 180"]},{"g":"Flags","s":"-flip x|y|z","d":"Mirrors the clipboard across its copy point; y is upside down. Clipboard sentences.","ex":["paste -flip x"],"k":"mirror"},{"g":"Flags","s":"-shift \u003cdirection> [n]","d":"Moves the clipboard’s blocks away from its copy point, 1 block unless told, the world’s way. Turns before it turn it too. Clipboard sentences.","ex":["load fang-manor as #fang -shift down 1","paste -rotate 90 -shift north 2"],"open":"load-shift","k":"offset nudge"},{"g":"Flags","s":"-with biomes","d":"Places the copied biomes too. paste and stack.","ex":["paste #town -with biomes"]},{"g":"Flags","s":"-without entities","d":"Entities stay behind. Clipboard sentences.","ex":["move up 8 -without entities"]},{"g":"Flags","s":"-whole","d":"Keeps the whole selection instead of trimming to the content. copy and cut.","ex":["copy -whole"],"k":"trim"},{"g":"Flags","s":"-depth \u003cn>","d":"How many blocks of air above the surface an overlay fills, up to 8. overlay.","ex":["overlay snow_block -depth 2"]},{"g":"Flags","s":"-soft \u003cn>","d":"Fades the edit out over the outer n blocks; -soft 0 keeps a hard edge. Terrain edits.","ex":["raise 6 -soft 12","brush cylinder 10 flatten -soft 3"],"k":"fade blend","open":"brush-flatten"},{"g":"Flags","s":"-replace · -next","d":"Overwrite a taken archive name, or take the next free one. save.","ex":["save as town -replace","save as town -next"]},{"g":"Client part","s":"Panel key","d":"Opens the panel. Every moonedit key starts unbound: bind the panel, undo, redo and the outline switches under Controls, moonedit. The client part is optional: everything works from chat without it.","ex":[],"k":"key keybind controls panel undo redo client mod"},{"g":"Client part","s":"Sentence box","d":"Reads what you type with the server’s grammar, says where it stops reading, and offers what may come next as chips. Tab takes the first chip, Enter runs the sentence, up and down bring back earlier ones.","ex":[],"k":"panel completion chips"},{"g":"Client part","s":"Palette","d":"Starts common sentences, grouped as Select, Edit, Terrain, Sculpt and Clipboard; hovering an icon shows the sentence it starts. On the right are the selection, clipboards, history, jobs and archives with buttons for what applies to them.","ex":[],"k":"panel icons"},{"g":"Client part","s":"Selection · Brush · Paste · Status","d":"Switch the outlines of the selection, wand corners and marks; the brush where a stroke would land; where a paste would go (off at first); and the corner panel showing the selection, clipboard and running jobs.","ex":[],"k":"outline preview overlay status corner toggle"}]</script>
 <script>
 // The /mo grammar as the builders use it: which words each sentence takes, which flags, in what order, and what the
-// result means. It mirrors Parser.java of moonedit 0.1.0-alpha.5 and the server's limits, and has no DOM, so it can
+// result means. It mirrors Parser.java of moonedit 0.1.0-alpha.6 and the server's limits, and has no DOM, so it can
 // be checked on its own.
 var MODEL = (function () {
   var RESERVED = { to: 1, and: 1, or: 1, not: 1, at: 1, as: 1 };
@@ -493,20 +503,35 @@ var MODEL = (function () {
   // ---- Words ----
   var DIRECTIONS = ['up', 'down', 'north', 'south', 'east', 'west', 'ahead', 'back', 'left', 'right'];
 
+  // A place is a base (here, target, a mark or coordinates; none means where you stand) and any nudges such as
+  // "up 2 north 3"; nudges alone start from where you stand.
   function placeTokens(p) {
+    var base;
     switch (p.kind) {
-      case 'here': return 'here';
-      case 'target': return 'target';
-      case 'ahead': return 'ahead ' + p.n;
-      case 'mark': return '#' + String(p.name || '').replace(/^#/, '');
-      case 'coords': return [p.x, p.y, p.z].join(' ');
-      default: return '';
+      case 'here': base = 'here'; break;
+      case 'target': base = 'target'; break;
+      case 'mark': base = '#' + String(p.name || '').replace(/^#/, ''); break;
+      case 'coords': base = [p.x, p.y, p.z].join(' '); break;
+      default: base = '';
     }
+    return [base, nudgeText(p)].filter(Boolean).join(' ');
+  }
+  function nudgeText(p) { return String(p.nudge || '').trim().replace(/\s+/g, ' '); }
+  // "at <place>" for an optional place, or nothing when it is left out.
+  function atPlace(p) { var t = placeTokens(p); return t ? 'at ' + t : ''; }
+  function checkNudges(text) {
+    var words = text ? text.split(' ') : [];
+    for (var i = 0; i < words.length; i++) {
+      if (DIRECTIONS.indexOf(words[i]) < 0) return 'Nudges are directions with a number of blocks, such as up 2 north 3';
+      if (/^\d+$/.test(words[i + 1] || '')) { if (+words[i + 1] < 1) return 'Nudge at least 1 block'; i++; }
+    }
+    return null;
   }
   function checkPlace(p, errs, label) {
-    if (p.kind === 'ahead') { var n = check.int(p.n, 1); if (!n.ok) errs.push([label, 'ahead: ' + n.msg]); }
     if (p.kind === 'mark') { var m = check.name(p.name); if (!m.ok) errs.push([label, m.msg]); }
     if (p.kind === 'coords') ['x', 'y', 'z'].forEach(function (a) { var c = check.coord(p[a]); if (!c.ok) errs.push([label, a + ': ' + c.msg]); });
+    var n = checkNudges(nudgeText(p));
+    if (n) errs.push([label, n]);
   }
 
   // Shapes: the solid ones a brush can carry, and the selection-only ones.
@@ -541,8 +566,9 @@ var MODEL = (function () {
     skip: { arg: 'filter', step: true, help: 'blocks that match are left out' },
     swap: { arg: 'pairs', step: true, help: 'the clipboard’s blocks change on the way through' },
     drained: { step: true, once: true, help: 'water and water plants become air, waterlogged blocks dry' },
-    rotate: { arg: 'rotate', step: true, help: 'turns the clipboard clockwise, seen from above' },
+    rotate: { arg: 'rotate', step: true, help: 'turns the clipboard clockwise about its copy point, seen from above' },
     flip: { arg: 'axis', step: true, help: 'mirrors the clipboard across its copy point' },
+    shift: { arg: 'shift', step: true, help: 'moves the clipboard’s blocks away from its copy point, the world’s way' },
     onto: { arg: 'filter', world: true, help: 'only destination blocks that match may be overwritten' },
     with: { fixed: 'biomes', once: true, help: 'places the copied biomes too' },
     without: { fixed: 'entities', once: true, help: 'entities stay behind' },
@@ -554,13 +580,15 @@ var MODEL = (function () {
   };
   var IN_PLACE = ['where', 'skip'];
   var TERRAIN = ['where', 'skip', 'soft'];
-  var STEPS = ['where', 'skip', 'swap', 'drained'];
+  // Every clipboard sentence takes the same steps, in the order written.
+  var STEPS = ['where', 'skip', 'swap', 'drained', 'rotate', 'flip', 'shift'];
   function flagDefault(name) {
     var f = FLAGS[name];
     if (f.arg === 'filter') return { f: name, v: name === 'onto' ? 'air' : name === 'where' ? 'solid' : 'air' };
     if (f.arg === 'pairs') return { f: name, pairs: [{ from: 'oak_planks', to: 'spruce_planks' }] };
     if (f.arg === 'rotate') return { f: name, v: '90' };
     if (f.arg === 'axis') return { f: name, v: 'x' };
+    if (f.arg === 'shift') return { f: name, v: 'up 1' };
     if (f.arg === 'depth') return { f: name, v: '2' };
     if (f.arg === 'soft') return { f: name, v: '8' };
     return { f: name };
@@ -616,7 +644,7 @@ var MODEL = (function () {
     help: 'Choose the region edits work on',
     variants: [
       { id: 'shape', label: 'Shape', fields: [{ k: 'mode', t: 'choice', label: 'Combine', def: '', opts: [['', 'Replace'], ['add', 'Add'], ['cut', 'Cut out'], ['keep', 'Keep overlap']] }, shapeField(false), ANCHOR],
-        words: function (v) { return ['select', v.mode, shapeTokens(v.shape), v.shape.kind !== 'span' && v.anchor.kind ? 'at ' + placeTokens(v.anchor) : '']; },
+        words: function (v) { return ['select', v.mode, shapeTokens(v.shape), v.shape.kind !== 'span' ? atPlace(v.anchor) : '']; },
         check: function (v, e) { checkShape(v.shape, e); if (v.shape.kind !== 'span') checkPlace(v.anchor, e, 'Anchor'); } },
       { id: 'grow', label: 'Grow', fields: [F.int('n', 'Blocks', '3', 1), { k: 'dirs', t: 'dirs', label: 'Directions', def: [] }],
         words: function (v) { return ['select grow', v.n].concat(v.dirs); },
@@ -648,10 +676,12 @@ var MODEL = (function () {
   V.from = corner('from', 'first');
   V.to = corner('to', 'second');
   V.mark = { help: 'Name a place', variants: [{ id: 'mark', fields: [{ k: 'name', t: 'name', label: 'Name', def: 'gate' }, { k: 'place', t: 'place', label: 'At', optional: 'The block you look at', def: { kind: '' } }],
-    words: function (v) { return ['mark', '#' + v.name.replace(/^#/, ''), v.place.kind ? 'at ' + placeTokens(v.place) : '']; },
+    words: function (v) { return ['mark', '#' + v.name.replace(/^#/, ''), atPlace(v.place)]; },
     check: function (v, e) { var c = check.name(v.name); if (!c.ok) e.push(['Name', c.msg]); checkPlace(v.place, e, 'At'); } }] };
   function simple(word, help) { return { help: help, variants: [{ id: word, fields: [], words: function () { return [word]; } }] }; }
-  V.info = simple('info', 'Describe the selection');
+  V.info = { help: 'Describe the selection and a clipboard', variants: [{ id: 'info', fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }],
+    words: function (v) { return ['info', v.name.trim() ? '#' + v.name.replace(/^#/, '') : '']; },
+    check: function (v, e) { optName(v.name, e); } }] };
 
   function materialVerb(word, help) {
     return { help: help, flags: IN_PLACE, variants: [{ id: word, fields: [F.material('material')],
@@ -701,20 +731,20 @@ var MODEL = (function () {
     words: function (v) { return ['biome', v.biome.trim()]; },
     check: function (v, e) { var c = check.word(v.biome, 'biome'); if (!c.ok) e.push(['Biome', c.msg]); } }] };
   V.regen = simple('regen', 'Regenerate from the world seed');
-  V.count = { help: 'Count matching blocks', variants: [{ id: 'count', fields: [{ k: 'filter', t: 'filter', label: 'Filter', def: 'diamond_ore or deepslate_diamond_ore', single: true }],
-    words: function (v) { return ['count', v.filter.trim()]; },
-    check: function (v, e) { var c = check.filter(v.filter, false, true); if (!c.ok) e.push(['Filter', c.msg + (/,/.test(v.filter) ? ' (count takes “or”, not commas)' : '')]); } }] };
+  V.count = { help: 'Count the selected blocks that match, or all that are not air', flags: IN_PLACE, variants: [{ id: 'count', fields: [], words: function () { return ['count']; } }] };
   V.distribution = { help: 'List blocks by kind', flags: IN_PLACE, variants: [{ id: 'distribution', fields: [], words: function () { return ['distribution']; } }] };
 
-  V.copy = { help: 'Copy the selection', flags: STEPS.concat(['without', 'whole']), variants: [{ id: 'copy', fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }],
-    words: function (v) { return ['copy', v.name.trim() ? 'as #' + v.name.replace(/^#/, '') : '']; },
-    check: function (v, e) { optName(v.name, e); } }] };
-  V.cut = { help: 'Copy, then clear', flags: STEPS.concat(['without', 'whole']), variants: [{ id: 'cut', fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }],
-    words: function (v) { return ['cut', v.name.trim() ? 'as #' + v.name.replace(/^#/, '') : '']; },
-    check: function (v, e) { optName(v.name, e); } }] };
-  V.paste = { help: 'Place a clipboard', flags: STEPS.concat(['rotate', 'flip', 'onto', 'with', 'without']), variants: [{ id: 'paste',
+  V.copy = { help: 'Copy the selection', flags: STEPS.concat(['without', 'whole']), variants: [{ id: 'copy',
+    fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }, { k: 'place', t: 'place', label: 'Copy point', optional: 'Where you stand', def: { kind: '' } }],
+    words: function (v) { return ['copy', v.name.trim() ? 'as #' + v.name.replace(/^#/, '') : '', atPlace(v.place)]; },
+    check: function (v, e) { optName(v.name, e); checkPlace(v.place, e, 'Copy point'); } }] };
+  V.cut = { help: 'Copy, then clear', flags: STEPS.concat(['without', 'whole']), variants: [{ id: 'cut',
+    fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }, { k: 'place', t: 'place', label: 'Copy point', optional: 'Where you stand', def: { kind: '' } }],
+    words: function (v) { return ['cut', v.name.trim() ? 'as #' + v.name.replace(/^#/, '') : '', atPlace(v.place)]; },
+    check: function (v, e) { optName(v.name, e); checkPlace(v.place, e, 'Copy point'); } }] };
+  V.paste = { help: 'Place a clipboard', flags: STEPS.concat(['onto', 'with', 'without']), variants: [{ id: 'paste',
     fields: [{ k: 'name', t: 'name', label: 'Clipboard', optional: true, def: '' }, { k: 'place', t: 'place', label: 'At', optional: 'Where you stand', def: { kind: '' } }],
-    words: function (v) { return ['paste', v.name.trim() ? '#' + v.name.replace(/^#/, '') : '', v.place.kind ? 'at ' + placeTokens(v.place) : '']; },
+    words: function (v) { return ['paste', v.name.trim() ? '#' + v.name.replace(/^#/, '') : '', atPlace(v.place)]; },
     check: function (v, e) { optName(v.name, e); checkPlace(v.place, e, 'At'); } }] };
   V.move = { help: 'Move the selected blocks', flags: STEPS.concat(['without']), variants: [
     { id: 'dir', label: 'By direction', fields: [{ k: 'dir', t: 'dir', label: 'Direction', def: 'up' }, F.int('n', 'Distance', '16', 1, true)],
@@ -722,7 +752,10 @@ var MODEL = (function () {
       check: function (v, e) { checkInt(e, 'Distance', v.n, 1, true); } },
     { id: 'to', label: 'To a place', fields: [{ k: 'place', t: 'place', label: 'To', def: { kind: 'mark', name: 'site' } }],
       words: function (v) { return ['move to', placeTokens(v.place)]; },
-      check: function (v, e) { checkPlace(v.place, e, 'To'); } }] };
+      check: function (v, e) { checkPlace(v.place, e, 'To'); } },
+    { id: 'from', label: 'From a place to another', fields: [{ k: 'from', t: 'place', label: 'From', def: { kind: 'here' } }, { k: 'place', t: 'place', label: 'To', def: { kind: 'target' } }],
+      words: function (v) { return ['move from', placeTokens(v.from), 'to', placeTokens(v.place)]; },
+      check: function (v, e) { checkPlace(v.from, e, 'From'); checkPlace(v.place, e, 'To'); } }] };
   V.stack = { help: 'Repeat the selection side by side', flags: STEPS.concat(['onto', 'with', 'without']), variants: [{ id: 'stack',
     fields: [F.int('n', 'Copies', '4', 1), { k: 'dir', t: 'dir', label: 'Direction', optional: 'The way you face', def: '' }],
     words: function (v) { return ['stack', v.n, v.dir]; },
@@ -791,6 +824,10 @@ var MODEL = (function () {
       if (f.arg === 'rotate' && !(/^-?\d+$/.test(String(fl.v)) && parseInt(fl.v, 10) % 90 === 0)) e.push([label, 'A multiple of 90 degrees']);
       if (f.arg === 'depth') checkInt(e, label, fl.v, 1, false, 8);
       if (f.arg === 'soft') checkInt(e, label, fl.v, 0, false, 256);
+      if (f.arg === 'shift') {
+        var sh = String(fl.v).trim().replace(/\s+/g, ' '), bad = checkNudges(sh);
+        if (!sh || bad || sh.split(' ').filter(function (w) { return DIRECTIONS.indexOf(w) >= 0; }).length !== 1) e.push([label, 'One direction and a number of blocks, such as north 2']);
+      }
     });
     return e;
   }
@@ -935,20 +972,60 @@ var MODEL = (function () {
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
-  // ---- CopyField: read-only text and a button that copies it; the text stays selectable if the browser refuses ----
+  // ---- Commands copy on click: the box is the control. Enter or Space copies too; dragging still selects text, and a
+  // browser that refuses the clipboard gets the text selected for Ctrl+C instead. ----
   function copyRow(text, opts) {
     opts = opts || {};
-    return '<div class="copyrow' + (opts.big ? ' big' : '') + '"><input class="control mono" readonly value="' + esc(text) + '" aria-label="' + esc(opts.label || 'Sentence') + '">' +
-      '<button type="button" class="btn' + (opts.big ? ' primary' : '') + '" data-copy>Copy</button></div>';
+    return '<code class="cmd' + (opts.big ? ' big' : '') + '" data-copy role="button" tabindex="0" title="Click to copy" aria-label="Copy ' +
+      esc(text) + '">' + text.split(' ').map(function (w) { return '<span class="w">' + esc(w) + '</span>'; }).join(' ') + '</code>';
+  }
+  var live = document.createElement('div');
+  live.className = 'sr-only';
+  live.setAttribute('aria-live', 'polite');
+  document.body.appendChild(live);
+  function copyBox(box) {
+    var text = box.textContent;
+    function said(state, words) {
+      box.setAttribute('data-state', state);
+      live.textContent = words;
+      clearTimeout(box.copyTimer);
+      box.copyTimer = setTimeout(function () { box.removeAttribute('data-state'); live.textContent = ''; }, 1400);
+    }
+    function refused() {
+      var range = document.createRange();
+      range.selectNodeContents(box);
+      getSelection().removeAllRanges();
+      getSelection().addRange(range);
+      said('select', 'Selected; press Ctrl+C to copy');
+    }
+    function fallback() {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.cssText = 'position: fixed; opacity: 0';
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(area);
+      box.focus();
+      if (ok) said('copied', 'Copied ' + text); else refused();
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(function () { said('copied', 'Copied ' + text); }, fallback);
+    else fallback();
   }
   document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('[data-copy]');
-    if (!b) return;
-    var input = b.parentNode.querySelector('input'), text = input.value;
-    function said(label) { b.textContent = label; setTimeout(function () { b.textContent = 'Copy'; }, 1200); }
-    function refused() { input.focus(); input.select(); said('Select'); }
-    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(function () { said('Copied'); }, refused);
-    else { input.select(); try { said(document.execCommand('copy') ? 'Copied' : 'Select'); } catch (e) { refused(); } }
+    var box = ev.target.closest('[data-copy]');
+    // A drag or double-click that selected text inside the box is a selection, not a copy.
+    var picked = getSelection();
+    if (!box || (!picked.isCollapsed && box.contains(picked.anchorNode))) return;
+    copyBox(box);
+  });
+  document.addEventListener('keydown', function (ev) {
+    var box = ev.target.closest && ev.target.closest('[data-copy]');
+    if (!box || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+    ev.preventDefault();
+    copyBox(box);
   });
 
   // ---- Builder ----
@@ -1020,7 +1097,7 @@ var MODEL = (function () {
   };
   Builder.prototype.renderOut = function () {
     var st = this.state, errs = M.errors(st), tr = M.trace(st);
-    $('.b-out', this.root).innerHTML = copyRow('/mo ' + M.sentence(st), { big: true, label: 'Command' }) +
+    $('.b-out', this.root).innerHTML = copyRow('/mo ' + M.sentence(st), { big: true }) +
       '<p class="b-says">' + esc(M.describe(st)) + '</p>' +
       (errs.length ? '<ul class="notice">' + errs.map(function (e) { return '<li><b>' + esc(e[0]) + '</b> ' + esc(e[1]) + '</li>'; }).join('') + '</ul>' : '') +
       (tr ? traceTable(tr, st.verb) : '');
@@ -1039,7 +1116,7 @@ var MODEL = (function () {
   Builder.prototype.load = function (state) { this.state = JSON.parse(JSON.stringify(state)); this.renderAll(); };
   Builder.prototype.onClick = function (ev) {
     var t = ev.target.closest('button');
-    if (!t || !this.root.contains(t) || t.hasAttribute('data-copy')) return;
+    if (!t || !this.root.contains(t)) return;
     var st = this.state, row = t.closest('.flagrow'), i = row ? +row.getAttribute('data-i') : -1;
     if (t.hasAttribute('data-verb')) return this.setVerb(t.getAttribute('data-verb'));
     if (t.hasAttribute('data-variant')) return this.setVerb(st.verb, t.getAttribute('data-variant'), true);
@@ -1137,12 +1214,12 @@ var MODEL = (function () {
       case 'pairs': return field(f.label, pairs(p, value), true);
     }
   }
-  var PLACES = [['here', 'here'], ['target', 'target'], ['ahead', 'ahead <n>'], ['mark', '#mark'], ['coords', 'x y z']];
+  var PLACES = [['here', 'here'], ['target', 'target'], ['mark', '#mark'], ['coords', 'x y z']];
   function placeControl(p, v, label, optional) {
     var extra = '';
-    if (v.kind === 'ahead') extra = input(p + '.n', v.n == null ? '5' : v.n, { num: true, label: 'Blocks ahead' });
     if (v.kind === 'mark') extra = named(p + '.name', v.name || '', 'Mark');
     if (v.kind === 'coords') extra = ['x', 'y', 'z'].map(function (a) { return input(p + '.' + a, v[a] == null ? '~' : v[a], { label: a, ph: a }); }).join('');
+    extra += input(p + '.nudge', v.nudge || '', { label: label + ' nudges', ph: 'nudge: up 2 north 3' });
     return field(label, '<div class="inline">' + select(p + '.kind', v.kind, (optional ? [['', optional.toLowerCase()]] : []).concat(PLACES), label) + extra + '</div>', true);
   }
   var SHAPES = [['sphere', 'sphere'], ['cylinder', 'cylinder'], ['ellipsoid', 'ellipsoid'], ['box', 'box'], ['span', 'from … to'], ['chunks', 'chunks']];
@@ -1172,6 +1249,7 @@ var MODEL = (function () {
     if (def.arg === 'rotate') return '<div>' + tg(p + '.v', fl.v, [['90', '90'], ['180', '180'], ['270', '270'], ['-90', '-90']], true) + '</div>';
     if (def.arg === 'axis') return '<div>' + tg(p + '.v', fl.v, [['x', 'x'], ['y', 'y'], ['z', 'z']], true) + '</div>';
     if (def.arg === 'depth' || def.arg === 'soft') return input(p + '.v', fl.v, { num: true, label: def.arg === 'soft' ? 'Blocks' : 'Depth' });
+    if (def.arg === 'shift') return input(p + '.v', fl.v, { label: '-shift', ph: 'north 2' });
     return def.fixed ? '<code>' + def.fixed + '</code>' : '';
   }
 
@@ -1230,16 +1308,18 @@ var MODEL = (function () {
     'stretch': preset('stretch', null, { n: '-1' }),
     'stream': preset('stream', null, { n: '3' }, [], { kind: 'cylinder', r: '40', h: '' }),
     'mountain': preset('mountain', null, { n: '40' }, [], { kind: 'sphere', r: '24' }),
-    'count': preset('count', null, { filter: 'diamond_ore or deepslate_diamond_ore' }),
+    'count': preset('count', null, {}, [['where', 'diamond_ore, deepslate_diamond_ore']]),
     'copy': preset('copy', null, { name: 'town' }, [['without']]),
     'paste-fang': preset('paste', null, { name: 'fang', place: { kind: 'mark', name: 'site' } }, [['rotate', '90'], ['skip', 'air']]),
     'paste-onto': preset('paste', null, { name: 'fang' }, [['onto', 'air']]),
     'paste-guide': preset('paste', null, {}, [['skip', 'stone'], ['swap', [{ from: 'oak_planks', to: 'stone' }]]]),
     'move': preset('move', 'dir', { dir: 'east', n: '32' }, [['skip', 'air']]),
+    'move-from': preset('move', 'from', { from: { kind: 'mark', name: 'old' }, place: { kind: 'mark', name: 'new' } }),
     'stack': preset('stack', null, { n: '6', dir: 'up' }, [['skip', 'air']]),
     'save-dry': preset('save', null, { name: 'fang', file: 'fang-dry' }, [['drained']]),
     'save-schem': preset('save', null, { file: 'town.schem' }, [['next']]),
     'load': preset('load', null, { file: 'fang-manor', name: 'fang' }, [['drained']]),
+    'load-shift': preset('load', null, { file: 'fang-manor', name: 'fang' }, [['shift', 'down 1']]),
     'undo': preset('undo', null, { n: '3' }),
     'brush-fill': preset('fill', null, { material: 'stone 70%, andesite 30%' }, [['where', 'exposed']], { kind: 'sphere', r: '6' }),
     'brush-flatten': preset('flatten', null, {}, [['soft', '3']], { kind: 'cylinder', r: '10' }),
@@ -1466,7 +1546,7 @@ var MODEL = (function () {
 
   // ---- Flags by sentence, read from the grammar model ----
   function matrix() {
-    var edits = ['fill', 'clear', 'drain', 'swap', 'walls', 'outline', 'hollow', 'overlay', 'distribution', 'biome', 'regen']
+    var edits = ['fill', 'clear', 'drain', 'swap', 'walls', 'outline', 'hollow', 'overlay', 'count', 'distribution', 'biome', 'regen']
       .concat(M.TERRAIN_EDITS);
     var verbs = edits.concat(['copy', 'cut', 'paste', 'move', 'stack', 'save', 'load']);
     return '<table><thead><tr><th scope="col">flag</th>' + verbs.map(function (v, i) { return '<th scope="col"' + (i === edits.length ? ' class="grp"' : '') + '>' + v + '</th>'; }).join('') +
