@@ -11,7 +11,8 @@ can share one line, separated by `;`:
 ```
 
 The [interactive manual](./) holds the same reference with a
-sentence builder and diagrams of what the flags do.
+command builder, which builds any sentence (brushes included) and says what it
+does, and diagrams of what the flags do.
 
 Edits run as background jobs: the server keeps ticking, progress shows on the
 action bar, and the result (blocks changed, time taken) arrives in chat. Every
